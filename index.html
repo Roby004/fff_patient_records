@@ -11,7 +11,7 @@
         .info { padding: 6px 8px; background: white; background: rgba(255,255,255,0.8); border-radius: 5px; font-size : 20px; }
         .info b { font-size: 20px; }
         .info i { display: block; margin-top: 5px; font-size: 16px; }
-        .legend { line-height: 18px; color: #555; background: white; padding: 6px; border-radius: 5px; }
+        .legend{ line-height: 18px; color: #555; background: white; padding: 6px; border-radius: 5px; }
         .legend i {
             width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;
         }
@@ -107,6 +107,35 @@
             font-size:13px ;
         }
        
+        /* Ensure the legend is positioned correctly on small screens */
+@media (max-width: 768px) {
+    .legend {
+        margin-bottom: 30px; /* Add space to prevent clipping */
+    }
+    .info , .summary-card {
+        font-size: 12px;
+        font-weight: lighter;
+    }
+    b, p, span,div {
+    font-size: 12px;
+}
+}
+
+/* Style for the summary card */
+.summary-card {
+   
+    top: 10px;
+   
+    transform: translateX(0%);
+    background: rgba(255, 255, 255, 0.781);
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    font-weight: bold;
+   
+}
+
     </style>
 </head>
 <body>
@@ -302,6 +331,21 @@
                 return div;
             };
             legend.addTo(map);
+
+            // Add summary card to display total records
+const summaryCard =L.control({position: 'topright'});
+
+summaryCard.onAdd = function (map) {
+    const div = L.DomUtil.create('div', 'summary-card');
+    div.innerHTML = `
+        <b>Total Records</b><br>
+        Madagascar: <span id="madagascar-count">532</span><br>
+        Comoros: <span id="comoros-count">1</span><br>
+        Mali: <span id="mali-count">2</span>
+    `;
+    return div;
+};
+summaryCard.addTo(map);
         
             // Feature interaction handlers
             function highlightFeature(e) {
