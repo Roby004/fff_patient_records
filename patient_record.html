@@ -1,0 +1,527 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient Records in Madagascar</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <style>
+        #map { height: 95vh; width: 100%;color:#555 }
+        .info { padding: 6px 8px; background: white; background: rgba(255,255,255,0.8); border-radius: 5px; font-size : 20px; }
+        .info b { font-size: 20px; }
+        .info i { display: block; margin-top: 5px; font-size: 16px; }
+        .legend { line-height: 18px; color: #555; background: white; padding: 6px; border-radius: 5px; }
+        .legend i {
+            width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;
+        }
+
+        /* Footer container */
+        .footer {
+            position: fixed;
+            z-index: 1000; 
+            width: 100%;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(100%);
+          
+        }
+        .footer.active {
+            transform: translateY(0);
+            background: white;
+            max-height: 800px;
+            bottom: 10px;
+        }
+        .footer-header {
+            text-align: center;
+            padding: 10px;
+            margin-top: -130px;
+            cursor: pointer;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            background: #f8f8f8;
+            font-size: 12px;
+            font-weight: bold;
+            border-top: 1px solid #ddd;
+        }
+        .footer-content {
+            padding: 10px;
+            max-height: 800px;
+            overflow-y: auto;
+            background: white;
+        }
+        .table-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow-x: auto; /* Enables horizontal scrolling on small screens */
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+}
+
+#regionTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+}
+
+#regionTable th, #regionTable td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+#regionTable th {
+    background: #2c3e50;
+    color: white;
+    font-weight: bold;
+}
+
+#regionTable tbody tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+#regionTable tbody tr:hover {
+    background: #ecf0f1;
+}
+
+/* Make table responsive */
+@media screen and (max-width: 768px) {
+    #regionTable {
+        font-size: 14px;
+    }
+    
+    #regionTable th, #regionTable td {
+        padding: 8px;
+    }
+}
+        th, td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: center;
+            align-items: center;
+            margin: 0 25%;
+            max-width: 80px;
+            font-size:13px ;
+        }
+       
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+     <!-- Footer for Patient Records -->
+     <div class="footer" id="footer">
+        <div class="footer-header" onclick="toggleFooter()">▼ Show Patient Records</div>
+        <div class="footer-content" id="footer-content">
+            <div class="table-container">
+                <table id="regionTable">
+                    
+                    <tr><th>Regions</th>
+                        <td>Alaotra-Mangoro</td> 
+                        <td>Ambatosoa</td> 
+                        <td>Analamanga</td> 
+                        <td>Analanjirofo</td> 
+                        <td>Androy</td> 
+                        <td>Anosy</td> 
+                        <td>Atsimo-Andrefana</td> 
+                        <td>Atsimo-Atsinanana</td> 
+                        <td>Atsinanana</td> 
+                         <td>Betsiboka</td> 
+                         <td>Boeny</td>
+                         <td>Bongolava</td>
+                         <td>Diana</td>
+                         <td>Fitovinany</td> 
+                         <td>Hautematsiatra</td>
+                         <td>Ihorombe</td>
+                         <td>Itasy</td>
+                        <td>Sava</td> 
+                         <td>Sofia</td> 
+                         <td>Vakinankaratra</td>
+                         <td>Vatovavy</td> </tr>
+                         <tr><th>Patients</th>
+                            <td>26</td> 
+                            <td>7</td> 
+                            <td>4</td> 
+                            <td>58</td> 
+                            <td>5</td> 
+                            <td>6</td> 
+                            <td>18</td> 
+                            <td>36</td> 
+                            <td>90</td> 
+                             <td>29</td> 
+                             <td>1</td>
+                             <td>3</td>
+                             <td> 3</td>
+                             <td>11</td> 
+                             <td>4</td>
+                             <td>1</td>
+                             <td>2</td>
+                            <td>12</td> 
+                             <td>100</td> 
+                             <td>2</td>
+                             <td>85</td> </tr>
+                </table>
+                <table id="countryTable">
+                    <tr><th>Country</th></tr>
+                    <tr><th>Patients</th></tr>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+        // Combined patient data
+        const patientData = {
+            // Madagascar Regions
+            'Alaotra-Mangoro': 26,
+            'Ambatosoa': 7,
+            'Analamanga': 4,
+            'Analanjirofo': 58,
+            'Androy': 5,
+            'Anosy': 6,
+            'Atsimo-Andrefana': 18,
+            'Atsimo-Atsinanana': 36,
+            'Atsinanana': 90,
+            'Betsiboka': 29,
+            'Boeny': 1,
+            'Bongolava': 3,
+            'Diana': 3,
+            'Fitovinany': 11,
+            'Hautematsiatra': 4,
+            'Ihorombe': 1,
+            'Itasy': 2,
+            'Sava': 12,
+            'Sofia': 100,
+            'Vakinankaratra': 2,
+            'Vatovavy': 85,
+            
+            // Countries
+            'Mali': 2,
+            'Comoros': 1
+        };
+          // Function to update table in the footer
+          function updateTable() {
+            const regionTable = document.getElementById("regionTable");
+            const countryTable = document.getElementById("countryTable");
+
+            // Add regions
+            Object.entries(patientData).forEach(([region, count]) => {
+                let row = regionTable.insertRow();
+                row.insertCell(0).textContent = region;
+                row.insertCell(1).textContent = count;
+            });
+
+            // Add countries
+            Object.entries(otherCountries).forEach(([country, count]) => {
+                let row = countryTable.insertRow();
+                row.insertCell(0).textContent = country;
+                row.insertCell(1).textContent = count;
+            });
+        }
+
+        // Toggle footer visibility
+        function toggleFooter() {
+            let footer = document.getElementById("footer");
+            let toggleBtn = document.querySelector(".footer-header");
+            footer.classList.toggle("active");
+            toggleBtn.innerHTML = footer.classList.contains("active") ? "▲ Hide Patient Records" : "▼ Show Patient Records";
+        }
+   
+              
+        // Load all geographic data simultaneously
+        Promise.all([
+            fetch('/geojson/gadm41_MDG_2.json').then(r => r.json()),
+            fetch('/geojson/gadm41_MLI_0.json').then(r => r.json()),  // Mali
+            fetch('/geojson/gadm41_COM_0.json').then(r => r.json())   // Comoros
+        ]).then(([madagascarData, maliData, comorosData]) => {
+            // Process Madagascar data (filter out NAME_3 features)
+            const filteredMadagascar = {
+                type: "FeatureCollection",
+                features: madagascarData.features.filter(f => !f.properties.NAME_3)
+            };
+        
+            // Create map instance
+            const map = L.map('map').setView([-18.7669, 46.8691], 6);
+            
+            // Add base tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        
+            // Unified styling function
+            function getColor(d) {
+                return d > 100 ? '#800026' :
+                       d > 50  ? '#BD0026' :
+                       d > 20  ? '#E31A1C' :
+                       d > 10  ? '#FC4E2A' :
+                       d > 5   ? '#FD8D3C' :
+                       d > 0   ? '#FEB24C' :
+                                 '#FFEDA0';
+            }
+        
+            // Style function for all features
+            function style(feature) {
+                const region = feature.properties.NAME_2 || feature.properties.COUNTRY;
+                return {
+                    fillColor: getColor(patientData[region] || 0),
+                    weight: 1,
+                    opacity: 1,
+                    color: 'white',
+                    fillOpacity: 0.7
+                };
+            }
+        
+            // Create info control
+            const info = L.control();
+            info.onAdd = function(map) {
+                this._div = L.DomUtil.create('div', 'info');
+                this.update();
+                return this._div;
+            };
+            
+            info.update = function(props) {
+                const content = props ? 
+                    `<b>${props.NAME_2 || props.COUNTRY}</b><br>${patientData[props.NAME_2 || props.COUNTRY] || 0} patients` :
+                    'Hover over a region or country';
+                this._div.innerHTML = content;
+            };
+            info.addTo(map);
+        
+            // Create legend
+            const legend = L.control({position: 'bottomright'});
+            legend.onAdd = function(map) {
+                const div = L.DomUtil.create('div', 'legend'),
+                    grades = [0, 1, 5, 10, 20, 50, 100];
+                div.innerHTML = '<b>Patients</b><br>';
+                for (let i = 0; i < grades.length; i++) {
+                    div.innerHTML += `<i style="background:${getColor(grades[i] + 1)}"></i> ${grades[i]}${grades[i+1] ? `-${grades[i+1]}` : '+'}<br>`;
+                }
+                return div;
+            };
+            legend.addTo(map);
+        
+            // Feature interaction handlers
+            function highlightFeature(e) {
+                const layer = e.target;
+                layer.setStyle({
+                    weight: 3,
+                    fillOpacity: 0.9
+                });
+                info.update(layer.feature.properties);
+            }
+        
+            function resetHighlight(e) {
+                geojson.resetStyle(e.target);
+                info.update();
+            }
+        
+            function zoomToFeature(e) {
+                map.fitBounds(e.target.getBounds());
+            }
+        
+            // Add all geographic layers
+            const geojson = L.geoJSON([filteredMadagascar, maliData, comorosData], {
+                style: style,
+                onEachFeature: function(feature, layer) {
+                    layer.on({
+                        mouseover: highlightFeature,
+                        mouseout: resetHighlight,
+                        click: zoomToFeature
+                    });
+                    
+                    const regionName = feature.properties.NAME_2 || feature.properties.COUNTRY;
+                    layer.bindPopup(`<b>${regionName}</b><br>Patients: ${patientData[regionName] || 0}`);
+                }
+            }).addTo(map);
+        })
+        .catch(error => console.error('Error loading geographic data:', error));
+
+        </script>
+
+    
+</body>
+</html>
+<script>
+    /* const patientData = {
+              'Alaotra-Mangoro': 26,
+              'Ambatosoa': 7,
+              'Analamanga': 4,
+              'Analanjirofo': 58,
+              'Androy': 5,
+              'Anosy': 6,
+              'Atsimo-Andrefana': 18,
+              'Atsimo-Atsinanana': 36,
+              'Atsinanana': 90,
+              'Betsiboka': 29,
+              'Boeny': 1,
+              'Bongolava': 3,
+              'Diana': 3,
+              'Fitovinany': 11,
+              'Hautematsiatra': 4,
+              'Ihorombe': 1,
+              'Itasy': 2,
+              'Sava': 12,
+              'Sofia': 100,
+              'Vakinankaratra': 2,
+              'Vatovavy': 85
+          };
+ 
+         
+
+          const map = L.map('map').setView([-18.7669, 46.8691], 6);
+
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap contributors'
+          }).addTo(map);
+         
+
+          function getColor(d) {
+              return d > 100 ? '#800026' :
+                     d > 50  ? '#BD0026' :
+                     d > 20  ? '#E31A1C' :
+                     d > 10  ? '#FC4E2A' :
+                     d > 5   ? '#FD8D3C' :
+                     d > 0   ? '#FEB24C' :
+                               '#FFEDA0';
+          }
+
+          function style(feature) {
+              const region = feature.properties.NAME_2;
+              return {
+                  fillColor: getColor(patientData[region] || 0),
+                  weight: 1,
+                  opacity: 1,
+                  color: 'white',
+                  fillOpacity: 0.7
+              };
+          }
+
+          const info = L.control();
+          info.onAdd = function(map) {
+              this._div = L.DomUtil.create('div', 'info');
+              this.update();
+              return this._div;
+          };
+          info.update = function(props) {
+              this._div.innerHTML = props ? `<b>${props.NAME_2}</b><br>${patientData[props.NAME_2] || 0} patients` :
+                  'Hover over a region';
+          };
+          info.addTo(map);
+
+          const legend = L.control({position: 'bottomright'});
+          legend.onAdd = function(map) {
+              const div = L.DomUtil.create('div', 'legend'),
+                  grades = [0, 1, 5, 10, 20, 50, 100];
+              div.innerHTML = '<b>Patients</b><br>';
+              for (let i = 0; i < grades.length; i++) {
+                  div.innerHTML += `<i style="background:${getColor(grades[i] + 1)}"></i> ${grades[i]}${grades[i+1] ? `-${grades[i+1]}` : '+'}<br>`;
+              }
+              return div;
+          };
+          legend.addTo(map);
+
+          function highlightFeature(e) {
+              const layer = e.target;
+              layer.setStyle({ weight: 3, fillOpacity: 0.9 });
+              info.update(layer.feature.properties);
+          }
+          function resetHighlight(e) {
+              geojson.resetStyle(e.target);
+              info.update();
+          }
+          function zoomToFeature(e) {
+              map.fitBounds(e.target.getBounds());
+          }
+
+          const geojson = L.geoJSON(data, {
+              style: style,
+              onEachFeature: function(feature, layer) {
+                  layer.on({
+                      mouseover: highlightFeature,
+                      mouseout: resetHighlight,
+                      click: zoomToFeature
+                  });
+                  layer.bindPopup(`<b>${feature.properties.NAME_2}</b><br>Patients: ${patientData[feature.properties.NAME_2] || 0}`);
+              }
+          }).addTo(map);
+      })
+      .catch(error => console.error('Error loading GeoJSON:', error));
+
+      const otherCountry = {
+                  "Mali": 1,
+                  "Comoros": 4
+                  };
+                  function getColor(d) {
+              return d > 100 ? '#800026' :
+                     d > 50  ? '#BD0026' :
+                     d > 20  ? '#E31A1C' :
+                     d > 10  ? '#FC4E2A' :
+                     d > 5   ? '#FD8D3C' :
+                     d > 0   ? '#FEB24C' :
+                               '#FFEDA0';
+          }
+          
+// Function to style each country
+function style(feature) {
+let countryName = feature.properties.COUNTRY;  // Ensure your JSON has "COUNTRY" property
+let patientCount = otherCountry[countryName] || 0;  // Default to 0 if no data
+
+return {
+  fillColor: getColor(patientCount),
+  weight: 2,
+  opacity: 1,
+  color: 'white',
+  dashArray: '3',
+  fillOpacity: 0.7
+};
+}
+
+// Function to add hover effects
+function onEachFeature(feature, layer) {
+layer.on({
+  mouseover: function(e) {
+      let layer = e.target;
+      layer.setStyle({
+          weight: 5,
+          color: '#666',
+          dashArray: '',
+          fillOpacity: 0.9
+      });
+
+      layer.bringToFront();
+
+      // Display popup with country name & patient count
+      let countryName = feature.properties.COUNTRY;
+      let patientCount = otherCountry[countryName] || 0;
+      layer.bindPopup(`<b>${countryName}</b><br>Patients: ${patientCount}`).openPopup();
+  },
+  mouseout: function(e) {
+      geojson.resetStyle(e.target);
+      e.target.closePopup();
+  }
+});
+}
+
+// Load Mali GeoJSON
+fetch("gadm41_MDG_2.json")
+.then(response => response.json())
+.then(data => {
+  L.geoJSON(data, {
+      style: style,
+      onEachFeature: onEachFeature
+  }).addTo(map);
+});
+
+fetch("gadm41_COM_0.json")
+.then(response => response.json())
+.then(data => {
+  console.log("Comoros GeoJSON Loaded:", data); // ✅ Check if data is loaded
+  L.geoJSON(data, {
+      style: style,
+      onEachFeature: onEachFeature
+  }).addTo(map);
+})
+.catch(error => console.error("Error loading Comoros JSON:", error));*/
